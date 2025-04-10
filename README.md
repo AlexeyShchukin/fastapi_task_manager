@@ -1,2 +1,2 @@
-# fastapi_task_manager
+# FastAPI Task Manager
 Pet project on FastAPI
