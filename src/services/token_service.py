@@ -1,0 +1,34 @@
+from datetime import timedelta, datetime, timezone
+from uuid import UUID
+
+from fastapi import Request
+
+from src.core.config import settings
+from src.db.models import RefreshToken
+from src.utils.request_utils import get_client_ip, get_user_agent
+from src.utils.unit_of_work import IUnitOfWork
+
+
+class TokenService:
+    def __init__(self, uow: IUnitOfWork):
+        self.uow = uow
+
+    async def save_refresh_token(self, user_uuid: UUID, token: str, request: Request) -> RefreshToken:
+        ip_address = get_client_ip(request)
+        user_agent = get_user_agent(request)
+        refresh_token_data = {
+            "token": token,
+            "expires_at": (datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)),
+            "ip_address": ip_address,
+            "user_agent": user_agent,
+            "user_uuid": user_uuid
+        }
+        async with self.uow as uow:
+            refresh_token = await self.uow.refresh_tokens.add_one(refresh_token_data)
+            await uow.commit()
+            return refresh_token
+
+    # async def logout_all(self, user_id: UUID):
+    #     async with self.uow:
+    #         await self.uow.refresh_tokens.delete_all_for_user(user_id)
+    #         await self.uow.commit()

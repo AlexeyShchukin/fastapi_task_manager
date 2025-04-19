@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Response, status
 
@@ -35,7 +36,7 @@ async def get_tasks(
 
 @task_router.get("/tasks/{task_id}", response_model=TaskFromDB)
 async def get_task_by_id(
-        task_id: int,
+        task_id: UUID,
         task_service: Annotated[TaskService, Depends(get_task_service)]
 ) -> TaskFromDB:
     task = await task_service.get_task_by_id(task_id)
@@ -44,7 +45,7 @@ async def get_task_by_id(
 
 @task_router.patch("/tasks/{task_id}", response_model=TaskFromDB)
 async def update_task(
-        task_id: int,
+        task_id: UUID,
         task_update: TaskUpdate,
         task_service: Annotated[TaskService, Depends(get_task_service)]
 ) -> TaskFromDB:
@@ -58,7 +59,7 @@ async def update_task(
     responses={204: {"description": "Task deleted successfully"}}
 )
 async def delete_task(
-        task_id: int,
+        task_id: UUID,
         task_service: Annotated[TaskService, Depends(get_task_service)]
 ) -> Response:
     await task_service.delete_task(task_id)

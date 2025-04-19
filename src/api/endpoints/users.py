@@ -1,12 +1,15 @@
 from typing import Annotated
 
-from fastapi import Depends, APIRouter
+from fastapi import Depends, APIRouter, Request
 from fastapi.security import OAuth2PasswordRequestForm
 
+from src.api.dependencies.token_dependency import get_token_service
 from src.api.dependencies.user_dependency import get_user_service, get_user_from_token
 from src.api.schemas.token import TokenPairResponse, AccessTokenResponse
 from src.api.schemas.user import UserFromDB, UserCreate
 from src.core.security import create_access_token, create_refresh_token
+from src.services.token_service import TokenService
+
 from src.services.user_service import UserService
 
 user_router = APIRouter(
@@ -30,11 +33,14 @@ async def create_user(
 )
 async def login(
         user_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-        user_service: Annotated[UserService, Depends(get_user_service)]
+        user_service: Annotated[UserService, Depends(get_user_service)],
+        token_service: Annotated[TokenService, Depends(get_token_service)],
+        request: Request
 ) -> TokenPairResponse:
-    await user_service.authenticate_user(user_data.username, user_data.password)
+    user = await user_service.authenticate_user(user_data.username, user_data.password)
     access_token = create_access_token({"sub": user_data.username})
     refresh_token = create_refresh_token({"sub": user_data.username})
+    await token_service.save_refresh_token(user.uuid, refresh_token, request)
     return TokenPairResponse(access_token=access_token, refresh_token=refresh_token)
 
 

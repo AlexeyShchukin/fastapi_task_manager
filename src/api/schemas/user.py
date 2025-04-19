@@ -33,9 +33,8 @@ class UserCreate(UserBase):
 class UserFromDB(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    uuid: UUID
 
 
 class UserInDB(UserFromDB):
-    uuid: UUID
     hashed_password: str

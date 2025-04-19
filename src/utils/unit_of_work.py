@@ -2,12 +2,14 @@ from abc import ABC, abstractmethod
 
 from src.db.database import async_session_maker
 from src.repositories.task_repository import TaskRepository
+from src.repositories.token_repository import RefreshTokenRepository
 from src.repositories.user_repository import UserRepository
 
 
 class IUnitOfWork(ABC):
-    task: TaskRepository
-    user: UserRepository
+    tasks: TaskRepository
+    users: UserRepository
+    refresh_tokens: RefreshTokenRepository
 
     @abstractmethod
     def __init__(self):
@@ -37,8 +39,9 @@ class UnitOfWork(IUnitOfWork):
     async def __aenter__(self):
         self.session = self.session_factory()
 
-        self.task = TaskRepository(self.session)
-        self.user = UserRepository(self.session)
+        self.tasks = TaskRepository(self.session)
+        self.users = UserRepository(self.session)
+        self.refresh_tokens = RefreshTokenRepository(self.session)
         return self
 
     async def __aexit__(self, *args):

@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import HTTPException
 
 from src.api.schemas.task import TaskCreate, TaskFromDB, TaskUpdate
@@ -11,28 +13,28 @@ class TaskService:
 
     async def add_task(self, task: TaskCreate, user: UserFromDB) -> TaskFromDB:
         task_dict: dict = task.model_dump()
-        task_dict["owner_id"] = user.id
+        task_dict["owner_uuid"] = user.uuid
         async with self.uow as uow:
-            task_from_db = await uow.task.add_one(task_dict)
+            task_from_db = await uow.tasks.add_one(task_dict)
             task_to_return = TaskFromDB.model_validate(task_from_db)
             await uow.commit()
             return task_to_return
 
     async def get_tasks(self, skip: int = 0, limit: int = 10) -> list[TaskFromDB]:
         async with self.uow as uow:
-            tasks: list = await uow.task.find_all(skip=skip, limit=limit)
+            tasks: list = await uow.tasks.find_all(skip=skip, limit=limit)
             return [TaskFromDB.model_validate(task) for task in tasks]
 
-    async def get_task_by_id(self, task_id: int) -> TaskFromDB | None:
+    async def get_task_by_id(self, task_id: UUID) -> TaskFromDB | None:
         async with self.uow as uow:
-            task = await uow.task.find_by_id(task_id)
+            task = await uow.tasks.find_by_id(task_id)
             if not task:
                 raise HTTPException(status_code=404, detail="Task not found")
             return TaskFromDB.model_validate(task) if task else None
 
-    async def update_task(self, task_id: int, task_update: TaskUpdate) -> TaskFromDB | None:
+    async def update_task(self, task_id: UUID, task_update: TaskUpdate) -> TaskFromDB | None:
         async with self.uow as uow:
-            task = await uow.task.find_by_id(task_id)
+            task = await uow.tasks.find_by_id(task_id)
             if not task:
                 raise HTTPException(status_code=404, detail="Task not found")
             if task_update.title is not None:
@@ -45,10 +47,10 @@ class TaskService:
             await uow.commit()
             return task_to_return
 
-    async def delete_task(self, task_id: int) -> None:
+    async def delete_task(self, task_id: UUID) -> None:
         async with self.uow as uow:
-            task = await uow.task.find_by_id(task_id)
+            task = await uow.tasks.find_by_id(task_id)
             if not task:
                 raise HTTPException(status_code=404, detail="Task not found")
-            await uow.task.delete(task)
+            await uow.tasks.delete(task)
             await uow.commit()

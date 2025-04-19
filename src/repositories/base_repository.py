@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from uuid import UUID
 
 from sqlalchemy import select, insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,7 +15,7 @@ class AbstractRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def find_by_id(self, id_: int):
+    async def find_by_id(self, uuid_: UUID):
         raise NotImplementedError
 
 
@@ -34,8 +35,8 @@ class Repository(AbstractRepository):
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
-    async def find_by_id(self, id_: int):
-        stmt = select(self.model).where(self.model.id == id_)
+    async def find_by_id(self, uuid_: UUID):
+        stmt = select(self.model).where(self.model.uuid == uuid_)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
