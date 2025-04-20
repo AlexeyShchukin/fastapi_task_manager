@@ -1,11 +1,15 @@
-import uvicorn
+from uvicorn import run
 from fastapi import FastAPI
 
+from src.api.endpoints.auth import auth_router
 from src.api.endpoints.tasks import task_router
+from src.api.endpoints.users import user_router
 
 app = FastAPI()
 
+app.include_router(auth_router)
+app.include_router(user_router)
 app.include_router(task_router)
 
 if __name__ == "__main__":
-    uvicorn.run(app="main:app")
+    run(app="main:app")
