@@ -7,7 +7,7 @@ from jose import jwt, ExpiredSignatureError, JWTError
 
 from src.core.config import settings
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/login/")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login/")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=10)
 
 

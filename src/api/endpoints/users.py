@@ -1,16 +1,9 @@
 from typing import Annotated
 
-from fastapi import Depends, APIRouter, Request
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import Depends, APIRouter
 
-from src.api.dependencies.token_dependency import get_token_service
-from src.api.dependencies.user_dependency import get_user_service, get_user_from_token
-from src.api.schemas.token import TokenPairResponse, AccessTokenResponse
-from src.api.schemas.user import UserFromDB, UserCreate
-from src.core.security import create_access_token, create_refresh_token
-from src.services.token_service import TokenService
-
-from src.services.user_service import UserService
+from src.api.dependencies.user_dependency import get_current_user
+from src.api.schemas.user import UserFromDB
 
 user_router = APIRouter(
     prefix="/api/v1",
@@ -18,42 +11,6 @@ user_router = APIRouter(
 )
 
 
-@user_router.post("/register/", response_model=UserFromDB)
-async def create_user(
-        user_data: UserCreate,
-        user_service: Annotated[UserService, Depends(get_user_service)]
-) -> UserFromDB:
-    return await user_service.add_user(user_data)
-
-
-@user_router.post(
-    "/login",
-    description="Creating access and refresh tokens",
-    response_model=TokenPairResponse
-)
-async def login(
-        user_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-        user_service: Annotated[UserService, Depends(get_user_service)],
-        token_service: Annotated[TokenService, Depends(get_token_service)],
-        request: Request
-) -> TokenPairResponse:
-    user = await user_service.authenticate_user(user_data.username, user_data.password)
-    access_token = create_access_token({"sub": user_data.username})
-    refresh_token = create_refresh_token({"sub": user_data.username})
-    await token_service.save_refresh_token(user.uuid, refresh_token, request)
-    return TokenPairResponse(access_token=access_token, refresh_token=refresh_token)
-
-
-@user_router.get("/about_me/", response_model=UserFromDB)
-async def read_user(current_user: Annotated[UserFromDB, Depends(get_user_from_token)]) -> UserFromDB:
+@user_router.get("/users/about_me/", response_model=UserFromDB)
+async def read_user(current_user: Annotated[UserFromDB, Depends(get_current_user)]) -> UserFromDB:
     return current_user
-
-
-@user_router.get(
-    "/refresh",
-    description="Creates a new access token based on the refresh token",
-    response_model=AccessTokenResponse
-)
-def refresh(user: Annotated[UserFromDB, Depends(get_user_from_token)]) -> AccessTokenResponse:
-    new_access_token = create_access_token({"sub": user.username})
-    return AccessTokenResponse(access_token=new_access_token)

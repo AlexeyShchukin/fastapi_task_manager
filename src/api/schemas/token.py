@@ -1,4 +1,7 @@
-from pydantic import BaseModel
+from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict
 
 
 class AccessTokenResponse(BaseModel):
@@ -8,3 +11,14 @@ class AccessTokenResponse(BaseModel):
 
 class TokenPairResponse(AccessTokenResponse):
     refresh_token: str
+
+
+class SessionInfo(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    uuid: UUID
+    ip_address: str
+    user_agent: str
+    created_at: datetime
+    expires_at: datetime
+    is_active: bool

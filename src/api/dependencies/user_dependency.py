@@ -12,7 +12,7 @@ async def get_user_service(uow: Annotated[IUnitOfWork, Depends(UnitOfWork)]) -> 
     return UserService(uow)
 
 
-async def get_user_from_token(
+async def get_current_user(
         token: Annotated[str, Depends(oauth2_scheme)],
         user_service: Annotated[UserService, Depends(get_user_service)]
 ) -> UserFromDB:
