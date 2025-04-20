@@ -43,8 +43,9 @@ class TokenService:
 
     async def logout_one(self, user_id: UUID, refresh_token: str):
         token_obj = await self.get_refresh_token_from_db(user_id, refresh_token)
-        await self.uow.refresh_tokens.delete(token_obj)
-        await self.uow.commit()
+        async with self.uow as uow:
+            await uow.refresh_tokens.delete(token_obj)
+            await uow.commit()
 
     async def logout_all(self, user_id: UUID) -> None:
         async with self.uow as uow:
