@@ -2,8 +2,8 @@ import logging
 
 
 def setup_logger():
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
+    log = logging.getLogger(__name__)
+    log.setLevel(logging.DEBUG)
 
     consol_handler = logging.StreamHandler()
     consol_handler.setLevel(logging.DEBUG)
@@ -11,17 +11,16 @@ def setup_logger():
     file_handler = logging.FileHandler("app.log", "w", encoding="utf-8")
     file_handler.setLevel(logging.DEBUG)
 
-    formatter = logging.Formatter(
-        fmt="""#%(levelname)-8s [%(asctime)s] - %(filename)s:
-        %(lineno)d - %(name)s:%(funcName)s - %(message)s"""
+    formatter = logging.Formatter(datefmt="%Y-%m-%d %H:%M:%S",
+        fmt="[%(asctime)s.%(msecs)03d] %(filename)18s:%(lineno)-3d %(levelname)-8s - %(message)s"
     )
     consol_handler.setFormatter(formatter)
     file_handler.setFormatter(formatter)
 
-    logger.addHandler(consol_handler)
-    logger.addHandler(file_handler)
+    log.addHandler(consol_handler)
+    log.addHandler(file_handler)
 
-    return logger
+    return log
 
 
 logger = setup_logger()

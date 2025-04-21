@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 
 from src.api.schemas.user import UserCreate, UserFromDB, UserInDB
-from src.core.security import get_password_hash, verify_password
+from src.core.security import hash_password, verify_password
 from src.utils.unit_of_work import IUnitOfWork
 
 
@@ -12,7 +12,7 @@ class UserService:
     async def add_user(self, user: UserCreate) -> UserFromDB:
         async with self.uow as uow:
             if not await uow.users.find_by_name(user.username):
-                hashed_password = get_password_hash(user.password)
+                hashed_password = hash_password(user.password)
                 user_dict = user.model_dump(exclude={"password"})
                 user_dict["hashed_password"] = hashed_password
                 user_from_db = await uow.users.add_one(user_dict)

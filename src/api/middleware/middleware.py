@@ -10,10 +10,18 @@ from src.loggers.loggers import logger
 class LoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         start_time = perf_counter()
-        logger.info(f"Request: {request.method} {request.url}")
+        logger.info(
+            "Request: %s %s",
+            request.method,
+            request.url
+        )
         response = await call_next(request)
         process_time = perf_counter() - start_time
-        logger.info(f"Response: {response.status_code} (handling {process_time:.4f} seconds)")
+        logger.info(
+            "Response: %s (handling %.4f seconds)",
+            response.status_code,
+            process_time
+        )
 
         return response
 
@@ -21,7 +29,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 def configure_cors(app):
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=["http://localhost:3000"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
