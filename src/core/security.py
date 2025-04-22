@@ -11,7 +11,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login/")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=10)
 
 
-def get_password_hash(password: str) -> str:
+def hash_password(password: str) -> str:
+    """Generates a hashed version of the provided password."""
     return pwd_context.hash(password)
 
 

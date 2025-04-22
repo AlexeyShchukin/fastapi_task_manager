@@ -2,3 +2,7 @@
 .idea/
 useful/__pycache__/
 .env
+
+# SSL keys and certs
+*.pem
+*.csr
