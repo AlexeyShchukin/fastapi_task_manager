@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import HTTPException, status
 
 from src.api.schemas.user import UserCreate, UserFromDB, UserInDB
@@ -43,3 +45,13 @@ class UserService:
                 headers={"WWW-Authenticate": "Bearer"}
             )
         return user
+
+    async def find_user_by_id(self, user_id: UUID) -> UserInDB:
+        async with self.uow as uow:
+            user = await uow.users.find_by_id(user_id)
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User not found"
+                )
+            return UserInDB.model_validate(user)
