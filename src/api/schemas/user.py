@@ -13,8 +13,11 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    password: constr(min_length=8) = Field(description="""Password must be at least 8 characters long and include 
-    at least one uppercase letter, one lowercase letter, one number, and one special character.""")
+    password: constr(min_length=8) = Field(
+        description="""Password must be at least 8 characters long and include at least one uppercase letter, 
+        one lowercase letter, one digit, and one special character. Spaces are not allowed."""
+    )
+
 
     @field_validator('password')
     @classmethod
@@ -27,6 +30,8 @@ class UserCreate(UserBase):
             raise ValueError('The password must contain at least one number.')
         if not search(r'[^A-Za-z0-9]', pwd):
             raise ValueError('The password must contain at least one special character.')
+        if search(r'\s', pwd):
+            raise ValueError('The password cannot contain spaces.')
         return pwd
 
 

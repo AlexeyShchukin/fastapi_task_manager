@@ -19,7 +19,11 @@ auth_router = APIRouter(
 )
 
 
-@auth_router.post("/auth/register/", response_model=UserFromDB)
+@auth_router.post(
+    "/auth/register/",
+    response_model=UserFromDB,
+    status_code=status.HTTP_201_CREATED
+)
 async def create_user(
         user_data: UserCreate,
         user_service: Annotated[UserService, Depends(get_user_service)]
