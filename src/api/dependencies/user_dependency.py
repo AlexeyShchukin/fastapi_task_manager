@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Depends, HTTPException
 
@@ -17,9 +18,10 @@ async def get_current_user(
         user_service: Annotated[UserService, Depends(get_user_service)]
 ) -> UserFromDB:
     payload = decode_token(token)
-    username = payload.get("sub")
-    if not username or not isinstance(username, str):
+    try:
+        user_id = UUID(payload["sub"])
+    except (KeyError, ValueError, TypeError):
         raise HTTPException(status_code=401, detail="Invalid token payload")
 
-    user = await user_service.find_user_by_name(username)
+    user = await user_service.find_user_by_id(user_id)
     return user

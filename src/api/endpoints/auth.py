@@ -1,5 +1,6 @@
 from datetime import datetime, timezone, timedelta
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Depends, APIRouter, Request, status, Response, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
@@ -19,7 +20,16 @@ auth_router = APIRouter(
 )
 
 
-@auth_router.post("/auth/register/", response_model=UserFromDB)
+@auth_router.post(
+    "/auth/register/",
+    response_model=UserFromDB,
+    status_code=status.HTTP_201_CREATED,
+    description="Register a new user",
+    responses={
+        201: {"description": "User successfully registered"},
+        400: {"description": "A user with this name already exists"}
+    }
+)
 async def create_user(
         user_data: UserCreate,
         user_service: Annotated[UserService, Depends(get_user_service)]
@@ -30,7 +40,13 @@ async def create_user(
 @auth_router.post(
     "/auth/login/",
     description="Creating access and refresh tokens",
-    response_model=TokenPairResponse
+    response_model=TokenPairResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"description": "User successfully logged in"},
+        404: {"description": "User not found"},
+        401: {"description": "Invalid password"}
+    }
 )
 async def login(
         user_data: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -40,8 +56,8 @@ async def login(
         response: Response
 ) -> TokenPairResponse:
     user = await user_service.authenticate_user(user_data.username, user_data.password)
-    access_token = create_access_token({"sub": user_data.username})
-    refresh_token = create_refresh_token({"sub": user_data.username})
+    access_token = create_access_token({"sub": str(user.uuid)})
+    refresh_token = create_refresh_token({"sub": str(user.uuid)})
 
     await token_service.save_refresh_token(user.uuid, refresh_token, request)
     response.set_cookie(
@@ -49,6 +65,7 @@ async def login(
         value=refresh_token,
         httponly=True,
         secure=True,
+        samesite="strict",
         max_age=int(timedelta(days=7).total_seconds()),
         expires=datetime.now(timezone.utc) + timedelta(days=7)
     )
@@ -70,11 +87,12 @@ async def refresh(
         raise HTTPException(status_code=401, detail="Refresh token missing")
 
     payload = decode_token(refresh_token)
-    username: str = payload.get("sub")
-    if username is None:
+    try:
+        user_id: UUID = UUID(payload["sub"])
+    except (KeyError, ValueError, TypeError):
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
-    user = await user_service.find_user_by_name(username)
+    user = await user_service.find_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
@@ -82,7 +100,7 @@ async def refresh(
     if token_in_db is None:
         raise HTTPException(status_code=401, detail="Refresh token not recognized")
 
-    new_access_token = create_access_token({"sub": user.username})
+    new_access_token = create_access_token({"sub": str(user.uuid)})
     return AccessTokenResponse(access_token=new_access_token)
 
 
@@ -97,8 +115,7 @@ async def get_user_sessions(
 @auth_router.post(
     "/auth/logout/",
     status_code=status.HTTP_204_NO_CONTENT,
-    responses={204: {"description": "The session logged out"}}
-)
+    responses={204: {"description": "The session logged out"}})
 async def logout_session(
         request: Request,
         response: Response,
@@ -106,9 +123,8 @@ async def logout_session(
         token_service: Annotated[TokenService, Depends(get_token_service)],
 ):
     refresh_token = request.cookies.get("refresh_token")
-    if not refresh_token:
-        raise HTTPException(status_code=400, detail="Refresh token missing")
     await token_service.logout_one(current_user.uuid, refresh_token)
+    response.headers["Authorization"] = ""
     response.delete_cookie("refresh_token")
 
 
@@ -118,7 +134,10 @@ async def logout_session(
     responses={204: {"description": "All sessions logged out"}}
 )
 async def logout_all_sessions(
+        response: Response,
         current_user: Annotated[UserFromDB, Depends(get_current_user)],
         token_service: Annotated[TokenService, Depends(get_token_service)]
 ):
     await token_service.logout_all(current_user.uuid)
+    response.headers["Authorization"] = ""
+    response.delete_cookie("refresh_token")

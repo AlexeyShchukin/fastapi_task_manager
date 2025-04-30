@@ -16,7 +16,11 @@ task_router = APIRouter(
 )
 
 
-@task_router.post("/tasks/", response_model=TaskFromDB)
+@task_router.post(
+    "/tasks/",
+    response_model=TaskFromDB,
+    status_code=status.HTTP_201_CREATED
+)
 async def create_task(task_data: TaskCreate,
                       task_service: Annotated[TaskService, Depends(get_task_service)],
                       user: Annotated[UserFromDB, Depends(get_current_user)]

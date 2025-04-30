@@ -1,10 +1,8 @@
-from datetime import timedelta, datetime, timezone
 from uuid import UUID
 
 from fastapi import Request, HTTPException
 
 from src.api.schemas.token import SessionInfo
-from src.core.config import settings
 from src.db.models import RefreshToken
 from src.utils.request_utils import get_client_ip, get_user_agent
 from src.utils.unit_of_work import IUnitOfWork
@@ -19,7 +17,6 @@ class TokenService:
         user_agent = get_user_agent(request)
         refresh_token_data = {
             "token": token,
-            "expires_at": (datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)),
             "ip_address": ip_address,
             "user_agent": user_agent,
             "user_uuid": user_uuid
