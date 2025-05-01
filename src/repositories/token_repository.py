@@ -1,6 +1,7 @@
+from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, delete
 
 from src.db.models import RefreshToken
 from src.repositories.base_repository import Repository
@@ -26,8 +27,9 @@ class RefreshTokenRepository(Repository):
         await self.session.delete(token_obj)
 
     async def delete_all_for_user(self, user_id: UUID):
-        stmt = select(self.model).where(self.model.user_uuid == user_id)
-        result = await self.session.execute(stmt)
-        tokens = result.scalars().all()
-        for token in tokens:
-            await self.session.delete(token)
+        stmt = delete(self.model).where(self.model.user_uuid == user_id)
+        await self.session.execute(stmt)
+
+    async def delete_expired_tokens(self):
+        stmt = delete(self.model).where(self.model.expires_at < datetime.now(timezone.utc))
+        await self.session.execute(stmt)
