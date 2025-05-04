@@ -2,7 +2,7 @@ from uuid import UUID, uuid4
 from datetime import datetime, timezone, timedelta
 
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy import DateTime, String, ForeignKey, Boolean
+from sqlalchemy import DateTime, String, ForeignKey, Boolean, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.config import settings
@@ -66,8 +66,10 @@ class RefreshToken(Base):
         nullable=False)
     ip_address: Mapped[str] = mapped_column(String(50), nullable=True)
     user_agent: Mapped[str] = mapped_column(String(200))
-    is_active: Mapped[bool] = mapped_column(default=True)
+    used: Mapped[bool] = mapped_column(default=False)
+    used_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     user_uuid: Mapped[UUID] = mapped_column(ForeignKey("users.uuid"), nullable=False)
+    __table_args__ = (Index('ix_refresh_tokens_token_user', 'token', 'user_uuid'),)
 
     user = relationship("User", back_populates="token")
 
