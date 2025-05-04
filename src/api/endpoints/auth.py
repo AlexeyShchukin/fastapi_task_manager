@@ -1,17 +1,16 @@
-from datetime import datetime, timezone, timedelta
+from datetime import timezone, datetime
 from typing import Annotated
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import Depends, APIRouter, Request, status, Response, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 
 from src.api.dependencies.token_dependency import get_token_service
 from src.api.dependencies.user_dependency import get_user_service, get_current_user
-from src.api.schemas.token import TokenPairResponse, AccessTokenResponse, SessionInfo
+from src.api.schemas.token import AccessTokenResponse, SessionInfo
 from src.api.schemas.user import UserFromDB, UserCreate
-from src.core.security import create_access_token, create_refresh_token, decode_token
+from src.core.security import create_access_token, decode_token
 from src.services.token_service import TokenService
-
 from src.services.user_service import UserService
 
 auth_router = APIRouter(
@@ -40,7 +39,7 @@ async def create_user(
 @auth_router.post(
     "/auth/login/",
     description="Creating access and refresh tokens",
-    response_model=TokenPairResponse,
+    response_model=AccessTokenResponse,
     status_code=status.HTTP_200_OK,
     responses={
         200: {"description": "User successfully logged in"},
@@ -54,31 +53,27 @@ async def login(
         token_service: Annotated[TokenService, Depends(get_token_service)],
         request: Request,
         response: Response
-) -> TokenPairResponse:
+) -> AccessTokenResponse:
     user = await user_service.authenticate_user(user_data.username, user_data.password)
-    access_token = create_access_token({"sub": str(user.uuid)})
-    refresh_token = create_refresh_token({"sub": str(user.uuid)})
-
-    await token_service.save_refresh_token(user.uuid, refresh_token, request)
-    response.set_cookie(
-        key="refresh_token",
-        value=refresh_token,
-        httponly=True,
-        secure=True,
-        samesite="strict",
-        max_age=int(timedelta(days=7).total_seconds()),
-        expires=datetime.now(timezone.utc) + timedelta(days=7)
+    user_id = user.uuid
+    access_token = create_access_token(
+        {"sub": str(user_id),
+         "iat": datetime.now(timezone.utc),
+         "jti": str(uuid4())
+         }
     )
-    return TokenPairResponse(access_token=access_token, refresh_token=refresh_token)
+    await token_service.issue_new_refresh_token(user_id, response, request)
+    return AccessTokenResponse(access_token=access_token)
 
 
-@auth_router.get(
+@auth_router.post(
     "/auth/refresh/",
     description="Creates a new access token based on the refresh token",
     response_model=AccessTokenResponse
 )
 async def refresh(
         request: Request,
+        response: Response,
         token_service: Annotated[TokenService, Depends(get_token_service)],
         user_service: Annotated[UserService, Depends(get_user_service)]
 ) -> AccessTokenResponse:
@@ -92,16 +87,8 @@ async def refresh(
     except (KeyError, ValueError, TypeError):
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
-    user = await user_service.find_user_by_id(user_id)
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-
-    token_in_db = await token_service.get_refresh_token_from_db(user.uuid, refresh_token)
-    if token_in_db is None:
-        raise HTTPException(status_code=401, detail="Refresh token not recognized")
-
-    new_access_token = create_access_token({"sub": str(user.uuid)})
-    return AccessTokenResponse(access_token=new_access_token)
+    await user_service.find_user_by_id(user_id)
+    return await token_service.rotate_tokens(user_id, refresh_token, response, request)
 
 
 @auth_router.get("/auth/sessions/", response_model=list[SessionInfo])
@@ -124,7 +111,6 @@ async def logout_session(
 ):
     refresh_token = request.cookies.get("refresh_token")
     await token_service.logout_one(current_user.uuid, refresh_token)
-    response.headers["Authorization"] = ""
     response.delete_cookie("refresh_token")
 
 
@@ -139,5 +125,4 @@ async def logout_all_sessions(
         token_service: Annotated[TokenService, Depends(get_token_service)]
 ):
     await token_service.logout_all(current_user.uuid)
-    response.headers["Authorization"] = ""
     response.delete_cookie("refresh_token")

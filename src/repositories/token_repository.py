@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from uuid import UUID
 
 from sqlalchemy import select, delete
@@ -30,6 +30,9 @@ class RefreshTokenRepository(Repository):
         stmt = delete(self.model).where(self.model.user_uuid == user_id)
         await self.session.execute(stmt)
 
-    async def delete_expired_tokens(self):
+    async def delete_expired_and_used_tokens(self):
         stmt = delete(self.model).where(self.model.expires_at < datetime.now(timezone.utc))
         await self.session.execute(stmt)
+        thirty_seconds_ago = datetime.now(timezone.utc) - timedelta(seconds=30)
+        stmt_used = delete(self.model).where(self.model.used == True, self.model.used_at < thirty_seconds_ago)
+        await self.session.execute(stmt_used)

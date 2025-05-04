@@ -21,4 +21,5 @@ class SessionInfo(BaseModel):
     user_agent: str
     created_at: datetime
     expires_at: datetime
-    is_active: bool
+    used: bool
+    used_at: datetime | None

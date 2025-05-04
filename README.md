@@ -72,7 +72,7 @@ The API exposes the following endpoints:
 
 - `POST /api/v1/auth/register/`: Register a new user.
 - `POST /api/v1/auth/login/`: Authenticate and receive JWT access and refresh tokens.
-- `POST /api/v1/auth/refresh/`: Creates a new access token based on the refresh token.
+- `POST /api/v1/auth/refresh/`: Create a new access token and rotate refresh token.
 - `POST /api/v1/auth/sessions/`: Retrieve all user sessions.
 - `POST /api/v1/auth/logout/`: Log out the user.
 - `POST /api/v1/auth/logout_all/`: Log out all user sessions.

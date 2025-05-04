@@ -10,10 +10,10 @@ scheduler = AsyncIOScheduler()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    @scheduler.scheduled_job("interval", minutes=15)
+    @scheduler.scheduled_job("cron", hour=3, minute=0)
     async def clean_sessions():
         token_service = TokenService(UnitOfWork())
-        await token_service.cleanup_expired_sessions()
+        await token_service.cleanup_expired_and_used_sessions()
 
     scheduler.start()
     logger.info("Starting lifespan")
