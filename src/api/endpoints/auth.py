@@ -68,7 +68,7 @@ async def login(
 
 @auth_router.post(
     "/auth/refresh/",
-    description="Creates a new access token based on the refresh token",
+    description="Issue new access token and rotate refresh token",
     response_model=AccessTokenResponse
 )
 async def refresh(
