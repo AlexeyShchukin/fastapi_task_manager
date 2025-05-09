@@ -2,6 +2,7 @@ from datetime import timezone, datetime
 from typing import Annotated
 from uuid import UUID, uuid4
 
+from redis.asyncio import Redis
 from fastapi import Depends, APIRouter, Request, status, Response, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -9,6 +10,7 @@ from src.api.dependencies.token_dependency import get_token_service
 from src.api.dependencies.user_dependency import get_user_service, get_current_user
 from src.api.schemas.token import AccessTokenResponse, SessionInfo
 from src.api.schemas.user import UserFromDB, UserCreate
+from src.core.redis import get_redis
 from src.core.security import create_access_token, decode_token
 from src.services.token_service import TokenService
 from src.services.user_service import UserService
@@ -44,25 +46,27 @@ async def create_user(
     responses={
         200: {"description": "User successfully logged in"},
         404: {"description": "User not found"},
-        401: {"description": "Invalid password"}
+        401: {"description": "Invalid password"},
+        403: {"description": "Too many login attempts"}
     }
 )
 async def login(
         user_data: Annotated[OAuth2PasswordRequestForm, Depends()],
         user_service: Annotated[UserService, Depends(get_user_service)],
         token_service: Annotated[TokenService, Depends(get_token_service)],
+        redis: Annotated[Redis, Depends(get_redis)],
         request: Request,
         response: Response
 ) -> AccessTokenResponse:
-    user = await user_service.authenticate_user(user_data.username, user_data.password)
-    user_id = user.uuid
+    user = await user_service.authenticate_user(user_data.username, user_data.password, redis)
+
     access_token = create_access_token(
-        {"sub": str(user_id),
+        {"sub": str(user.uuid),
          "iat": datetime.now(timezone.utc),
          "jti": str(uuid4())
          }
     )
-    await token_service.issue_new_refresh_token(user_id, response, request)
+    await token_service.issue_new_refresh_token(user.uuid, response, request)
     return AccessTokenResponse(access_token=access_token)
 
 

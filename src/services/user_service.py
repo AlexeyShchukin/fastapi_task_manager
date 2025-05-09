@@ -1,9 +1,11 @@
 from uuid import UUID
 
 from fastapi import HTTPException, status
+from redis.asyncio import Redis
 
 from src.api.schemas.user import UserCreate, UserFromDB, UserInDB
 from src.core.security import hash_password, verify_password
+from src.services.rate_limiter import LoginRateLimiter
 from src.utils.unit_of_work import IUnitOfWork
 
 
@@ -36,14 +38,35 @@ class UserService:
                 )
             return UserInDB.model_validate(user)
 
-    async def authenticate_user(self, username: str, password: str) -> UserFromDB:
-        user = await self.find_user_by_name(username)
-        if not verify_password(password, user.hashed_password):
+    async def authenticate_user(self, username: str, password: str, redis: Redis) -> UserFromDB:
+        limiter = LoginRateLimiter(redis)
+
+        if await limiter.is_blocked(username):
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid password",
-                headers={"WWW-Authenticate": "Bearer"}
+                status_code=403,
+                detail="Too many login attempts. Try again later."
             )
+
+        user = await self.find_user_by_name(username)
+
+        if not verify_password(password, user.hashed_password):
+            attempts = await limiter.incr_attempts(username)
+            remaining = limiter.max_attempts - attempts
+            if remaining > 0:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=f"Invalid password. {remaining} login attempts remaining.",
+                    headers={"WWW-Authenticate": "Bearer"}
+                )
+
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Too many failed login attempts. You are temporarily blocked.",
+                    headers={"WWW-Authenticate": "Bearer"}
+                )
+
+        await limiter.reset_attempts(username)
         return user
 
     async def find_user_by_id(self, user_id: UUID) -> UserInDB:
