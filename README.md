@@ -12,14 +12,24 @@ It provides basic CRUD (Create, Read, Update, Delete) operations for tasks and i
 - [Testing with SwaggerUI](#testing-the-api-with-swagger-ui)
 
 
-
-
 ## Features
 
-- User registration and authentication.
-- CRUD operations for tasks (Create, Read, Update, Delete).
-- Real-time updates for task status changes using WebSocket.
-- OAuth2 authentication for API access.
+#### 🧾 Task Management
+- Full CRUD operations for tasks (Create, Read, Update, Delete)
+- Real-time task status updates via WebSocket
+
+#### 🔐 Authentication & Security
+
+- Secure password hashing (bcrypt)
+- OAuth2 authentication with access and refresh tokens
+- Token rotation
+- Brute-force and replay attack prevention
+- Logout with refresh token invalidation
+
+#### 🧱 Architecture
+- Clean architecture: UoW + Repositories
+- Async SQLAlchemy + Alembic migrations
+- Modular FastAPI project structure
 
 
 ## Project Structure
