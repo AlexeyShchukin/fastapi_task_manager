@@ -46,25 +46,33 @@ async def validation_exception_handler(
 
 async def handle_db_error(request: Request, exc: SQLAlchemyError) -> ORJSONResponse:
     logger.error(
-        "Database error during request: %s %s",
+        "Database error during request %s %s: %s",
         request.method,
         request.url,
+        str(exc),
         exc_info=exc
     )
     return ORJSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"message": "An unexpected error has occurred. Our admins are already working on it."}
+        content={
+            "error": type(exc).__name__,
+            "message": "A database error occurred. Please try again later."
+        }
     )
 
 
 async def handle_unexpected_error(request: Request, exc: Exception) -> ORJSONResponse:
     logger.error(
-        "Unexpected error occurred",
+        "Unexpected error occurred during request %s %s: %s",
         request.method,
         request.url,
+        str(exc),
         exc_info=exc
     )
     return ORJSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"message": "Internal server error. Please try again later."}
+        content={
+            "error": type(exc).__name__,
+            "message": "Internal server error. Please try again later."
+        }
     )
