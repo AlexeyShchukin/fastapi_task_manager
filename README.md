@@ -1,5 +1,5 @@
 # FastAPI Task Manager 
-Real-time task manager
+
 
 FastAPI Task Manager is a simple task management API built using FastAPI. 
 It provides basic CRUD (Create, Read, Update, Delete) operations for tasks and includes real-time updates for task status changes via WebSocket.
@@ -14,11 +14,11 @@ It provides basic CRUD (Create, Read, Update, Delete) operations for tasks and i
 
 ## Features
 
-#### 🧾 Task Management
+####  Task Management
 - Full CRUD operations for tasks (Create, Read, Update, Delete)
 - Real-time task status updates via WebSocket
 
-#### 🔐 Authentication & Security
+####  Authentication & Security
 
 - Secure password hashing (bcrypt)
 - OAuth2 authentication with access and refresh tokens
@@ -26,7 +26,7 @@ It provides basic CRUD (Create, Read, Update, Delete) operations for tasks and i
 - Brute-force and replay attack prevention
 - Logout with refresh token invalidation
 
-#### 🧱 Architecture
+####  Architecture
 - Clean architecture: UoW + Repositories
 - Async SQLAlchemy + Alembic migrations
 - Modular FastAPI project structure
