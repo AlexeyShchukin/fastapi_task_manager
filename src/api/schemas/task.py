@@ -11,9 +11,9 @@ class TaskCreate(BaseModel):
 
 
 class TaskUpdate(BaseModel):
-    title: Optional[str]
-    description: Optional[str]
-    completed: Optional[bool]
+    title: str | None = None
+    description: str | None = None
+    completed: bool | None = None
 
 
 class TaskFromDB(BaseModel):
@@ -24,3 +24,4 @@ class TaskFromDB(BaseModel):
     description: str
     completed: bool
     created_at: datetime
+    owner_uuid: UUID

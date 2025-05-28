@@ -3,7 +3,8 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from redis.asyncio import Redis
 
-from src.api.schemas.user import UserCreate, UserFromDB, UserInDB
+from src.api.schemas.role import RoleSchema, PermissionSchema
+from src.api.schemas.user import UserCreate, UserPublic, UserInternal
 from src.core.security import hash_password, verify_password
 from src.services.rate_limiter import LoginRateLimiter
 from src.utils.unit_of_work import IUnitOfWork
@@ -13,14 +14,21 @@ class UserService:
     def __init__(self, uow: IUnitOfWork):
         self.uow = uow
 
-    async def add_user(self, user: UserCreate) -> UserFromDB:
+    async def add_user(self, user: UserCreate) -> UserPublic:
         async with self.uow as uow:
             if not await uow.users.find_by_name(user.username):
                 hashed_password = hash_password(user.password)
                 user_dict = user.model_dump(exclude={"password"})
                 user_dict["hashed_password"] = hashed_password
                 user_from_db = await uow.users.add_one(user_dict)
-                user_to_return = UserFromDB.model_validate(user_from_db)
+
+                default_role = await uow.roles.find_by_name("user")
+                if not default_role:
+                    raise HTTPException(status_code=500, detail="Default role not found")
+
+                await uow.users.assign_role(user_from_db.uuid, default_role.id)
+
+                user_to_return = UserPublic.model_validate(user_from_db)
                 await uow.commit()
                 return user_to_return
             raise HTTPException(
@@ -28,17 +36,35 @@ class UserService:
                 detail="A user with this name already exists"
             )
 
-    async def find_user_by_name(self, username: str) -> UserInDB:
+    async def find_user_by_name(self, username: str) -> UserInternal:
         async with self.uow as uow:
-            user = await uow.users.find_by_name(username)
-            if not user:
+            user_from_db = await uow.users.find_by_name(username)
+            if not user_from_db:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="User not found"
                 )
-            return UserInDB.model_validate(user)
+            roles = [RoleSchema(id=role.id, name=role.name) for role in user_from_db.roles]
 
-    async def authenticate_user(self, username: str, password: str, redis: Redis) -> UserFromDB:
+            unique_permissions = {
+                perm.id: perm for role in user_from_db.roles for perm in role.permissions
+            }
+            permissions = [
+                PermissionSchema(id=perm.id, name=perm.name)
+                for perm in unique_permissions.values()
+            ]
+
+            user_data = {
+                "uuid": user_from_db.uuid,
+                "username": user_from_db.username,
+                "email": user_from_db.email,
+                "hashed_password": user_from_db.hashed_password,
+                "roles": roles,
+                "permissions": permissions
+            }
+            return UserInternal.model_validate(user_data)
+
+    async def authenticate_user(self, username: str, password: str, redis: Redis) -> UserPublic:
         limiter = LoginRateLimiter(redis)
 
         if await limiter.is_blocked(username):
@@ -69,12 +95,31 @@ class UserService:
         await limiter.reset_attempts(username)
         return user
 
-    async def find_user_by_id(self, user_id: UUID) -> UserInDB:
+    async def find_user_by_id(self, user_id: UUID) -> UserInternal:
         async with self.uow as uow:
-            user = await uow.users.find_by_id(user_id)
-            if not user:
+            user_from_db = await uow.users.find_by_id(user_id)
+            if not user_from_db:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="User not found"
                 )
-            return UserInDB.model_validate(user)
+
+            roles = [RoleSchema(id=role.id, name=role.name) for role in user_from_db.roles]
+
+            unique_permissions = {
+                perm.id: perm for role in user_from_db.roles for perm in role.permissions
+            }
+            permissions = [
+                PermissionSchema(id=perm.id, name=perm.name)
+                for perm in unique_permissions.values()
+            ]
+
+            user_data = {
+                "uuid": user_from_db.uuid,
+                "username": user_from_db.username,
+                "email": user_from_db.email,
+                "hashed_password": user_from_db.hashed_password,
+                "roles": roles,
+                "permissions": permissions
+            }
+            return UserInternal.model_validate(user_data)

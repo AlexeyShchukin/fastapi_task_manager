@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from src.db.database import async_session_maker
+from src.repositories.role_repository import RoleRepository
 from src.repositories.task_repository import TaskRepository
 from src.repositories.token_repository import RefreshTokenRepository
 from src.repositories.user_repository import UserRepository
@@ -41,6 +42,7 @@ class UnitOfWork(IUnitOfWork):
 
         self.tasks = TaskRepository(self.session)
         self.users = UserRepository(self.session)
+        self.roles = RoleRepository(self.session)
         self.refresh_tokens = RefreshTokenRepository(self.session)
         return self
 
