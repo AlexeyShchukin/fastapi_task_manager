@@ -16,6 +16,7 @@ It provides basic CRUD (Create, Read, Update, Delete) operations for tasks and i
 
 ####  Task Management
 - Full CRUD operations for tasks (Create, Read, Update, Delete)
+- Role Based Access Control (RBAC)
 - Real-time task status updates via WebSocket
 
 ####  Authentication & Security
@@ -63,16 +64,24 @@ task_manager_fastapi/
 
 - `src`: Contains the main application code.
   - `alembic`: Database migration files.
-  - `api`: Contains API endpoints for tasks, users, authentication and websockets.
-    - `endpoints`: Task, user, authentication and websocket API endpoints.
+  - `api`: API-related logic.
+    - `dependencies`: FastAPI dependencies.
+    - `endpoints`: Task, user, authentication and websocket API routes.
     - `middleware`: Middleware for simple logging.
-    - `schemas`: Pydantic models for request and response.
+    - `schemas`: Pydantic models for request/response validation.
   - `core`: Core configurations.
   - `db`: Database configuration and models.
+  - `exceptions`: Custom exception handlers.
+  - `loggers`: Logger configurations.
+  - `repositories`: Data access layer (CRUD operations).
+  - `services`: Business logic layer.
+  - `utils`: Helper functions and utilities.
+  - `websockets`: WebSocket connection handling and logic.
 - `.env`: Store environment variables.
 - `.gitignore`: Lists files and directories to be ignored by version control.
 - `alembic.ini`: Alembic configuration.
-- `README.md`: Documentation about the project.
+- `main.py`: Application entry point.
+- `README.md`: Project documentation (overview, setup, usage).
 - `requirements.txt`: List of project dependencies.
 
 
