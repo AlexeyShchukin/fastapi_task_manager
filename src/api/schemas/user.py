@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, constr, Field, field_validator
 
+from src.api.schemas.role import PermissionSchema, RoleSchema
+
 
 class UserBase(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -35,11 +37,18 @@ class UserCreate(UserBase):
         return pwd
 
 
-class UserFromDB(UserBase):
+class UserPublic(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
     uuid: UUID
 
 
-class UserInDB(UserFromDB):
+class UserInternal(UserPublic):
     hashed_password: str
+    roles: list[RoleSchema]
+    permissions: list[PermissionSchema]
+    scope: str | None = None
+
+    @property
+    def permission_names(self) -> set[str]:
+        return {p.name for p in self.permissions}

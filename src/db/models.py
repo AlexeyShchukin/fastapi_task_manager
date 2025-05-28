@@ -2,7 +2,7 @@ from uuid import UUID, uuid4
 from datetime import datetime, timezone, timedelta
 
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy import DateTime, String, ForeignKey, Boolean, Index
+from sqlalchemy import DateTime, String, ForeignKey, Boolean, Index, Table, Column
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.config import settings
@@ -27,7 +27,7 @@ class Task(Base):
     )
     owner_uuid: Mapped[UUID] = mapped_column(ForeignKey("users.uuid"), nullable=False)
 
-    owner = relationship("User", back_populates="tasks")
+    owner: Mapped["User"] = relationship("User", back_populates="tasks")
 
 
 class User(Base):
@@ -42,8 +42,64 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(50), nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(100), nullable=False)
 
-    tasks = relationship("Task", back_populates="owner")
-    token = relationship("RefreshToken", back_populates="user")
+    roles: Mapped[list["Role"]] = relationship(
+        secondary="users_roles",
+        back_populates="users"
+    )
+
+    tasks: Mapped[list["Task"]] = relationship(
+        "Task",
+        back_populates="owner"
+    )
+
+    tokens: Mapped[list["RefreshToken"]] = relationship(
+        "RefreshToken",
+        back_populates="user"
+    )
+
+
+class Role(Base):
+    __tablename__ = "roles"
+
+    id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
+    name: Mapped[str] = mapped_column(unique=True)
+
+    users: Mapped[list["User"]] = relationship(
+        secondary="users_roles",
+        back_populates="roles"
+    )
+
+    permissions: Mapped[list["Permission"]] = relationship(
+        secondary="roles_permissions",
+        back_populates="roles"
+    )
+
+
+class Permission(Base):
+    __tablename__ = "permissions"
+
+    id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
+    name: Mapped[str] = mapped_column(unique=True)
+
+    roles: Mapped[list["Role"]] = relationship(
+        secondary="roles_permissions",
+        back_populates="permissions"
+    )
+
+
+users_roles = Table(
+    "users_roles",
+    Base.metadata,
+    Column("user_id", ForeignKey("users.uuid"), primary_key=True),
+    Column("role_id", ForeignKey("roles.id"), primary_key=True),
+)
+
+roles_permissions = Table(
+    "roles_permissions",
+    Base.metadata,
+    Column("role_id", ForeignKey("roles.id"), primary_key=True),
+    Column("permission_id", ForeignKey("permissions.id"), primary_key=True),
+)
 
 
 class RefreshToken(Base):
@@ -71,7 +127,7 @@ class RefreshToken(Base):
     user_uuid: Mapped[UUID] = mapped_column(ForeignKey("users.uuid"), nullable=False)
     __table_args__ = (Index('ix_refresh_tokens_token_user', 'token', 'user_uuid'),)
 
-    user = relationship("User", back_populates="token")
+    user: Mapped["User"] = relationship("User", back_populates="tokens")
 
     def __repr__(self):
         return f"<RefreshToken(user_id={self.user_uuid}, expires_at={self.expires_at})>"

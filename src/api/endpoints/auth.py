@@ -9,7 +9,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from src.api.dependencies.token_dependency import get_token_service
 from src.api.dependencies.user_dependency import get_user_service, get_current_user
 from src.api.schemas.token import AccessTokenResponse, SessionInfo
-from src.api.schemas.user import UserFromDB, UserCreate
+from src.api.schemas.user import UserPublic, UserCreate
 from src.core.redis import get_redis
 from src.core.security import create_access_token, decode_token
 from src.services.token_service import TokenService
@@ -23,7 +23,7 @@ auth_router = APIRouter(
 
 @auth_router.post(
     "/auth/register/",
-    response_model=UserFromDB,
+    response_model=UserPublic,
     status_code=status.HTTP_201_CREATED,
     description="Register a new user",
     responses={
@@ -34,7 +34,7 @@ auth_router = APIRouter(
 async def create_user(
         user_data: UserCreate,
         user_service: Annotated[UserService, Depends(get_user_service)]
-) -> UserFromDB:
+) -> UserPublic:
     return await user_service.add_user(user_data)
 
 
@@ -98,7 +98,7 @@ async def refresh(
 @auth_router.get("/auth/sessions/", response_model=list[SessionInfo])
 async def get_user_sessions(
         token_service: Annotated[TokenService, Depends(get_token_service)],
-        current_user: Annotated[UserFromDB, Depends(get_current_user)]
+        current_user: Annotated[UserPublic, Depends(get_current_user)]
 ):
     return await token_service.get_user_sessions(current_user.uuid)
 
@@ -110,7 +110,7 @@ async def get_user_sessions(
 async def logout_session(
         request: Request,
         response: Response,
-        current_user: Annotated[UserFromDB, Depends(get_current_user)],
+        current_user: Annotated[UserPublic, Depends(get_current_user)],
         token_service: Annotated[TokenService, Depends(get_token_service)],
 ):
     refresh_token = request.cookies.get("refresh_token")
@@ -125,7 +125,7 @@ async def logout_session(
 )
 async def logout_all_sessions(
         response: Response,
-        current_user: Annotated[UserFromDB, Depends(get_current_user)],
+        current_user: Annotated[UserPublic, Depends(get_current_user)],
         token_service: Annotated[TokenService, Depends(get_token_service)]
 ):
     await token_service.logout_all(current_user.uuid)
