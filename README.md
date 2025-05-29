@@ -23,12 +23,18 @@ It provides basic CRUD (Create, Read, Update, Delete) operations for tasks and i
 
 - Secure password hashing (bcrypt)
 - OAuth2 authentication with access and refresh tokens
-- Token rotation
-- Brute-force and replay attack prevention
+- Generation of a new access token based on refresh token
+- Refresh token rotation
+- Brute-force protection via Redis rate limiting
+- Replay attack prevention via used token tracking and validation
+- Automatic cleanup of expired and used tokens via scheduled cron job
 - Logout with refresh token invalidation
 
 ####  Architecture
-- Clean architecture: UoW + Repositories
+- Clean architecture: 
+  - Presentation layer (endpoints)
+  - Business logic (services)
+  - Infrastructure (Unit Of Work + Repositories)
 - Async SQLAlchemy + Alembic migrations
 - Modular FastAPI project structure
 
@@ -52,12 +58,16 @@ task_manager_fastapi/
 │   ├── loggers/
 │   ├── repositories/
 │   ├── services/
+│   ├── tests/
+│   │   ├── integration_tests/
+│   │   ├── unit_tests/
 │   ├── utils/
 │   ├── websockets/
 ├── .env
 ├── .gitignore
 ├── alembic.ini
 ├── main.py
+├── pytest.ini
 ├── README.md
 ├── requirements.txt
 ```
@@ -75,12 +85,16 @@ task_manager_fastapi/
   - `loggers`: Logger configurations.
   - `repositories`: Data access layer (CRUD operations).
   - `services`: Business logic layer.
+  - `tests`: Integration and unit tests.
+    - `integration_tests`: Integration tests covering multiple components working together.
+    - `unit_tests`: Unit tests for isolated functions and classes.
   - `utils`: Helper functions and utilities.
   - `websockets`: WebSocket connection handling and logic.
 - `.env`: Store environment variables.
 - `.gitignore`: Lists files and directories to be ignored by version control.
 - `alembic.ini`: Alembic configuration.
 - `main.py`: Application entry point.
+- `pytest.ini`: Tests configuration.
 - `README.md`: Project documentation (overview, setup, usage).
 - `requirements.txt`: List of project dependencies.
 

@@ -48,6 +48,7 @@ class UserInternal(UserPublic):
     roles: list[RoleSchema]
     permissions: list[PermissionSchema]
     scope: str | None = None
+    cached_permission_names: set[str] | None = None
 
     @property
     def permission_names(self) -> set[str]:
