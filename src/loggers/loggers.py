@@ -3,10 +3,10 @@ import logging
 
 def setup_logger():
     log = logging.getLogger(__name__)
-    log.setLevel(logging.INFO)
+    log.setLevel(logging.DEBUG)
 
     file_handler = logging.FileHandler("app.log", "w", encoding="utf-8")
-    file_handler.setLevel(logging.INFO)
+    file_handler.setLevel(logging.DEBUG)
 
     formatter = logging.Formatter(datefmt="%Y-%m-%d %H:%M:%S",
         fmt="[%(asctime)s.%(msecs)03d] %(filename)18s:%(lineno)-3d %(levelname)-8s - %(message)s"

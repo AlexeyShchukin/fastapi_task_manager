@@ -15,7 +15,8 @@ def has_permission(user_permissions: set[str], resource: str, action: str, scope
     return target_permission_no_scope in user_permissions
 
 
-def verify_ownership(user: UserInternal, resource_owner_id: UUID):
+def verify_ownership(user: UserInternal, resource_owner_id: UUID) -> None:
+    """Raises 403 if user's scope is 'own' and user is not the resource owner."""
     if getattr(user, "scope", None) == "own" and user.uuid != resource_owner_id:
         raise HTTPException(
             status_code=403,
