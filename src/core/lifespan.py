@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
+from src.core.redis import create_redis
 from src.loggers.loggers import logger
 from src.services.token_service import TokenService
 from src.utils.unit_of_work import UnitOfWork
@@ -20,3 +21,11 @@ async def lifespan(app: FastAPI):
     yield
     scheduler.shutdown()
     logger.info("Stopping lifespan")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    redis = await create_redis()
+    app.state.redis = redis
+    yield
+    await app.state.redis.close()

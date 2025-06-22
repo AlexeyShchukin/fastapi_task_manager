@@ -2,6 +2,7 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from uvicorn import run
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from src.api.endpoints.ws import ws_router
 from src.api.endpoints.auth import auth_router
@@ -10,6 +11,8 @@ from src.api.endpoints.users import user_router
 from src.api.middleware.middleware import LoggingMiddleware, configure_cors
 from src.core.lifespan import lifespan
 from src.exceptions.handlers import validation_exception_handler, handle_db_error, handle_unexpected_error
+
+instrumentator = Instrumentator(should_instrument_requests_inprogress=True)
 
 app = FastAPI(lifespan=lifespan)
 
@@ -24,6 +27,7 @@ app.add_exception_handler(Exception, handle_unexpected_error)
 app.add_middleware(LoggingMiddleware)
 configure_cors(app)
 
+instrumentator.instrument(app).expose(app)
 
 if __name__ == "__main__":
     run(

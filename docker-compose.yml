@@ -1,0 +1,138 @@
+services:
+  # ---------------------
+  # PostgreSQL Database
+  # ---------------------
+  db:
+    image: postgres:17.4
+    container_name: task_manager_db
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      - "5434:5432"
+    volumes:
+      - task_pgdata:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 4G
+
+  # ---------------------
+  # Alembic migrations
+  # ---------------------
+  migrate:
+    build: .
+    command: [ "./migrate.sh" ]
+    depends_on:
+      - db
+    env_file:
+      - .env
+
+  # ---------------------
+  # Redis Cache
+  # ---------------------
+  redis:
+    image: redis:7-alpine
+    container_name: task_manager_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+
+  # ---------------------
+  # FastAPI Application
+  # ---------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fastapi_task_manager
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 2G
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+
+  loadtest:
+    image: locustio/locust
+    depends_on:
+      - app
+    ports:
+      - "8089:8089"
+    command: >
+      -f /mnt/locustfile.py
+      --host=http://app:8000
+    volumes:
+      - ./src/tests/load/locustfile.py:/mnt/locustfile.py:ro
+    networks:
+      - default
+
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    ports:
+      - "9080:9080"
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./promtail-config.yaml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    privileged: true
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheusdata:/prometheus
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - grafanadata:/var/lib/grafana
+
+
+volumes:
+  task_pgdata:
+  redisdata:
+  grafanadata:
+  prometheusdata:
