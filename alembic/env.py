@@ -1,28 +1,43 @@
 import os
+from dotenv import load_dotenv
+
+dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+load_dotenv(dotenv_path)
+
 import sys
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
+from sqlalchemy import engine_from_config, pool
 from alembic import context
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
-from src.core.config import settings
 from src.db.database import Base
-from src.db.models import Task
+from src.db import models
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-section = config.config_ini_section
-config.set_section_option(section, "DB_HOST", settings.DB_HOST)
-config.set_section_option(section, "DB_PORT", settings.DB_PORT)
-config.set_section_option(section, "DB_USER", settings.DB_USER)
-config.set_section_option(section, "DB_NAME", settings.DB_NAME)
-config.set_section_option(section, "DB_PASS", settings.DB_PASS)
+# section = config.config_ini_section
+# config.set_section_option(section, "DB_HOST", settings.DB_HOST)
+# config.set_section_option(section, "DB_PORT", settings.DB_PORT)
+# config.set_section_option(section, "DB_USER", settings.DB_USER)
+# config.set_section_option(section, "DB_NAME", settings.DB_NAME)
+# config.set_section_option(section, "DB_PASS", settings.DB_PASS)
+
+db_user = os.getenv("DB_USER")
+db_pass = os.getenv("DB_PASS")
+db_host = os.getenv("DB_HOST")
+db_port = os.getenv("DB_PORT", "5432")
+db_name = os.getenv("DB_NAME")
+
+if not all([db_user, db_pass, db_host, db_name]):
+    raise RuntimeError("Some required DB environment variables are missing")
+
+database_url = f"postgresql+psycopg2://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+
+config.set_main_option("sqlalchemy.url", database_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

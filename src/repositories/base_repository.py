@@ -53,4 +53,4 @@ class Repository(AbstractRepository):
         await self.session.delete(instance)
 
     async def update(self, instance):
-        pass
+        self.session.add(instance)
