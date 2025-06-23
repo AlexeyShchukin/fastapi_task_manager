@@ -10,6 +10,7 @@ It provides basic CRUD (Create, Read, Update, Delete) operations for tasks and i
 - [Project Structure](#project-structure)
 - [API Endpoints](#api-endpoints)
 - [Testing with SwaggerUI](#testing-the-api-with-swagger-ui)
+- [Performance Testing](#performance-testing)
 
 
 ## Features
@@ -153,3 +154,34 @@ You can use swagger UI to:
 6. The response will be displayed below, showing the status code and response data.
 
 7. You can also view example request and response payloads, which can be helpful for understanding the expected data format.
+
+
+## Performance Testing
+
+### Test Environment
+- Docker (isolated environment with limited resources):
+  - Hardware: Lenovo ThinkPad E16  
+  - CPU: 4 vCPUs (Intel Core i7-13700H @ 2.4 GHz per core)  
+  - RAM: 2 GB  
+- Workers: 4 Uvicorn workers  
+- Stack: FastAPI + async PostgreSQL (no caching)
+
+### Load Test Configuration
+- Concurrent users: 300 (using Locust)  
+- Ramp-up rate: 5 users per second  
+- Maximum load: approximately 150 requests per second (RPS)
+
+### Results
+| Metric                   | Value           |
+|--------------------------|-----------------|
+| Average response time     | 11 ms           |
+| 95th percentile latency   | 20 ms           |
+| Max response time        | ~280 ms          |
+| Failure rate             | < 0.01%         |
+| Average throughput (RPS)  | 150             |
+
+### Conclusion
+The application demonstrates stable performance under high load with limited resources, maintaining low latency and minimal errors.
+
+
+

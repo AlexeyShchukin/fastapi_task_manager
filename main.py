@@ -12,7 +12,12 @@ from src.api.middleware.middleware import LoggingMiddleware, configure_cors
 from src.core.lifespan import lifespan
 from src.exceptions.handlers import validation_exception_handler, handle_db_error, handle_unexpected_error
 
-instrumentator = Instrumentator(should_instrument_requests_inprogress=True)
+instrumentator = Instrumentator(
+    should_instrument_requests_inprogress=True,
+    excluded_handlers=["/metrics"],
+    should_group_status_codes=False,
+    should_ignore_untemplated=True
+)
 
 app = FastAPI(lifespan=lifespan)
 
