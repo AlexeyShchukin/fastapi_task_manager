@@ -47,6 +47,7 @@ The project follows the following directory structure:
 ```
 task_manager_fastapi/
 ├── alembic/
+├── grafana/
 ├── src/
 │   ├── api/
 │   │   ├── dependencies/
@@ -61,20 +62,30 @@ task_manager_fastapi/
 │   ├── services/
 │   ├── tests/
 │   │   ├── integration_tests/
+│   │   ├── load
 │   │   ├── unit_tests/
 │   ├── utils/
 │   ├── websockets/
+├── .dockerignore
 ├── .env
 ├── .gitignore
 ├── alembic.ini
+├── docker-compose.override.yml
+├── docker-compose.yml
+├── Dockerfile
+├── loki-config.yaml
 ├── main.py
+├── migrate.sh
+├── prometheus.yml
+├── promtail-config.yaml
 ├── pytest.ini
 ├── README.md
 ├── requirements.txt
 ```
 
+- `alembic`: Database migration files.
+- `grafana`: Monitoring dashboard for visualizing metrics and logs.
 - `src`: Contains the main application code.
-  - `alembic`: Database migration files.
   - `api`: API-related logic.
     - `dependencies`: FastAPI dependencies.
     - `endpoints`: Task, user, authentication and websocket API routes.
@@ -88,13 +99,22 @@ task_manager_fastapi/
   - `services`: Business logic layer.
   - `tests`: Integration and unit tests.
     - `integration_tests`: Integration tests covering multiple components working together.
+    - `load`: Load testing scripts.
     - `unit_tests`: Unit tests for isolated functions and classes.
   - `utils`: Helper functions and utilities.
   - `websockets`: WebSocket connection handling and logic.
+- `.dockerignore`: Specifies files to exclude from the Docker context.
 - `.env`: Store environment variables.
 - `.gitignore`: Lists files and directories to be ignored by version control.
 - `alembic.ini`: Alembic configuration.
+- `docker-compose.override.yml`: Overrides default Docker Compose settings for development.
+- `docker-compose.yml`: Defines and runs multi-container Docker applications.
+- `Dockerfile`: Instructions for building the Docker image.
+- `loki-config.yaml`: Configuration file for Grafana Loki log aggregation.
 - `main.py`: Application entry point.
+- `migrate.sh`: Shell script to run database migrations.
+- `prometheus.yml`: Configuration for Prometheus metrics collection.
+- `promtail-config.yaml`: Configuration for Promtail log shipping to Loki.
 - `pytest.ini`: Tests configuration.
 - `README.md`: Project documentation (overview, setup, usage).
 - `requirements.txt`: List of project dependencies.
