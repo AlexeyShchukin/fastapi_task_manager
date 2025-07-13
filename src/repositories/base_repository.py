@@ -49,8 +49,8 @@ class Repository(AbstractRepository):
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def delete(self, instance):
-        await self.session.delete(instance)
-
     async def update(self, instance):
         self.session.add(instance)
+
+    async def delete(self, instance):
+        await self.session.delete(instance)

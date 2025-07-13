@@ -6,15 +6,12 @@ from fastapi import HTTPException
 from src.api.dependencies.permission_dependency import permission_required
 from src.api.schemas.role import PermissionSchema
 from src.api.schemas.user import UserInternal
-from src.core.redis import get_redis
 from src.services.permission_service import get_user_with_cached_permissions
 
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-async def test_permission_required_with_redis_get_redis():
-    redis = await anext(get_redis())
-    await redis.flushdb()
+async def test_permission_required_with_redis_get_redis(redis_client):
 
     test_uuid = uuid4()
     permissions = {"task:read:any", "task:create", "task:update:own"}
@@ -31,12 +28,12 @@ async def test_permission_required_with_redis_get_redis():
     )
 
     redis_key = f"perm:{test_uuid}"
-    await redis.delete(redis_key)
+    await redis_client.delete(redis_key)
 
-    user_with_cache = await get_user_with_cached_permissions(user=user, redis=redis)
+    user_with_cache = await get_user_with_cached_permissions(user=user, redis=redis_client)
     assert user_with_cache.cached_permission_names == permissions
 
-    data = await redis.get(redis_key)
+    data = await redis_client.get(redis_key)
     assert data is not None
     assert set(eval(data)) == permissions
 
@@ -51,7 +48,7 @@ async def test_permission_required_with_redis_get_redis():
         cached_permission_names=set(),
     )
 
-    user2 = await get_user_with_cached_permissions(user=user2, redis=redis)
+    user2 = await get_user_with_cached_permissions(user=user2, redis=redis_client)
     assert "task:read:any" in user2.cached_permission_names
 
     checker = permission_required("task", "read")
