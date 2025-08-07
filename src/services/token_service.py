@@ -71,7 +71,7 @@ class TokenService:
 
     async def cleanup_expired_and_used_sessions(self):
         async with self.uow as uow:
-            await uow.refresh_tokens.delete_expired_tokens()
+            await uow.refresh_tokens.delete_expired_and_used_tokens()
             await uow.commit()
 
     async def issue_new_refresh_token(
